@@ -1,0 +1,96 @@
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-vpc.html
+AWSTemplateFormatVersion: 2010-09-09
+Description: VPC Nested Stack Template
+
+Parameters:
+  VpcBlock:
+    Type: String
+    Default: 10.0.0.0/16
+    Description: VPC CIDR Tange
+  cfnsubnetBlock01: 
+    Type: String
+    Default: 10.0.1.0/24
+    Description: CidrBlock for Subnet within the VPC
+
+Metadata:
+  AWS::CloudFormation::Interface: 
+    ParameterGroups:
+      - Label: 
+          default: Dev VPC Network Config
+          Parameters:
+            - VpcBlock
+            - cfnsubnetBlock01
+    ParameterLabels: 
+      VpcBlock: 
+        default: VPC CIDR Range Selection
+
+Resources: 
+  myVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-myVPC"     #  ${MyVarName}
+
+  cfnsubnet01:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      VpcId: !Ref myVPC
+      CidrBlock: !Ref cfnsubnetBlock01
+      AvailabilityZone: 
+        Fn::Select:
+          - '0'
+          - Fn::GetAZs:
+              Ref: AWS::Region 
+      Tags: 
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-cfnsubnet01"
+
+  cfnroutetb01: 
+    Type: AWS::EC2::RouteTable
+    Properties: 
+      VpcId: !Ref myVPC
+      Tags: 
+        - Key: Name
+          Value: Public Subnets
+        - Key: Network
+          Value: Public
+  
+  cfnroutetb01cfnSubnetAss: 
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties: 
+      RouteTableId: !Ref cfnroutetb01
+      SubnetId: !Ref cfnsubnet01
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  VPCGatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:  !Ref InternetGateway
+      VpcId: !Ref myVPC
+  
+  Route: 
+    DependsOn: VPCGatewayAttachment
+    Type: AWS::EC2::Route
+    Properties: 
+      RouteTableId: !Ref cfnroutetb01
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+  
+Outputs:
+  cfnsubnetId:
+    Description: Subnet Id
+    Value: !Ref cfnsubnet01
+
+  VpcID: 
+    Description: Vpc Id
+    Value: !Ref myVPC
+
+
+    
+    

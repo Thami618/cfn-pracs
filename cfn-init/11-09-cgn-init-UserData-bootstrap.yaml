@@ -1,0 +1,108 @@
+AWSTemplateFormatVersion: 2010-09-09
+
+Description: CFN Init Demo
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+
+Resources: 
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: My SG with port 22, 8080 and 80 inbound
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '8080'          
+          ToPort: '8080'
+          CidrIp: 0.0.0.0/0
+
+  MyVMInstance:
+    Type: AWS::EC2::Instance
+    Metadata:
+      Comment: Deploy simple tomcat app
+      AWS::Cloudformation::Key
+        config:
+        #You can use the PACKAGES key to download and install pre-packaged applications and components
+          packages:
+            yum:
+              java-1.8.0-openjdk.x86_64: []
+              java-1.8.0-openjdk.x86_64: []
+              tomcat8: []
+        
+          groups:
+            groupone:
+            grouptwo:
+              gid: "501"
+        #You can use the users key to create Linux/UNIX users on the EC2 instance. 
+        #The users key isn't supported for Windows systems.
+          users:
+            user1:
+              - groupone
+              - grouptwo
+            uid: "501"
+            homeDir: "/tmp"
+        #You can use the sources key to download an archive file and unpack it in a target directory on the EC2 instance.
+        #This key is fully supported for both Linux and Windows systems.
+          sources:
+            /tmp: "https://cfn-ts-ngcobo.s3.us-east-2.amazonaws.com/cfn/demo1.zip"
+        #You can use the FILES key to create files on the EC2 instance
+          files:
+            #File One!!
+            "/etc/cfn/cfn-hup.conf": 
+            #Sub is used to substitute the two psudo parameters ${AWS::StackId} and ${AWS::Region}
+              content: !Sub | 
+                [main]
+                stack=${AWS::StackId}
+                region=${AWS::Region}
+                interval=7
+              mode: "000400"
+              owner: "root"
+              group: "root"
+            #File Two!!
+            "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+              content: !Sub | 
+                [cfn-auto-reloader-hook]
+                triggers=post.update
+                path=Resources.MyVMInstance.Metadata.AWS::Cloudformation::Init
+                action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackName} --resource MyVMInstance --region ${AWS::Region}
+              mode: "000400"
+              owner: "root"
+              group: "root"
+
+          commands:
+            test1:
+              command: "chmod 755 demo.war"
+              cwd: "/tmp"
+            test2: 
+              command: "sudo yum -y erase java-1.7.0-openjdl.x86_64"
+              cwd: "~"
+            test3: 
+              command: "rm -rf demo"
+              cwd: "/var/lib/tomcat8/webapps"
+            test4: 
+              command: "cp demo.war /var/lib/tomcat8/webapps"
+              cwd: "/tmp"
+          #You can use the services key to define which services should be enabled or disabled when the instance is launched.
+          services:
+            sysvinit: 
+              #Our service name is "tomcat8"
+              tomcat8: 
+                enabled: "true"
+                ensureRunning: "true"
+          
+    Properties:
+      ImageId: ami-0cd3dfa4e37921605
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !Ref MySec
+      UserData: 
+        "Fn::Base64":
+          !Sub |
+            yum update -y aws-cfn-bootstrap
+        

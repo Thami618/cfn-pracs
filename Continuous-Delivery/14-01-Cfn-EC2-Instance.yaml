@@ -1,0 +1,126 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EC2 Instance with Instance profile role to access S3 Buckets
+
+Parameters:
+  KeyName: 
+    Description: KeyName to SSH to VMs
+    Type: AWS::EC2::KeyPair::KeyName
+
+
+Resources: 
+# CREATION OF MY EC2 ROLE
+  MyCICDEC2InstanceProfileRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      Policies:
+        - PolicyName: MyCICDEC2InstanceProfilePolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: 
+                  - 's3:Get*'
+                  - 's3:List*'
+                Resource: '*'
+
+  # CREATION OF MY PROFILE
+  MyInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref MyCICDEC2InstanceProfileRole
+# CREATION OF MY SECURITY GROUP RESOURCE
+  MySecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties: 
+      GroupDescription: My SG with port 22 and 8080 inbound 
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0
+      - IpProtocol: tcp
+        FromPort: '8080'
+        ToPort: '8080'
+        CidrIp: 0.0.0.0/0
+# CREATE STAGING EC2 INSTANCE
+  MyStagingVMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-00dfe2c7ce89a450b
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SecurityGroups: 
+       - !Ref MySecurityGroup
+       # This profile gives the EC2 Instance permissions to access the S3 Bucket for WAR Files
+      IamInstanceProfile: !Ref MyInstanceProfile
+      Tags:
+        - Key: Name
+          Value: Dev
+        - Key: Environmnent
+          Value: Stage
+      UserData: 
+        Fn::Base64: |
+          #!/bin/bash
+          sudo yum update
+          sudo yum install ruby
+          sudo yum install wget
+          sudo yum -y erase java-1.7.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk-devel
+          sudo yum -y install tomcat8
+          cd /home/ec2-user
+          wget https://aws-codedeploy-us-east-2.s3.amazonaws.com/latest/install
+          chmod +x ./install
+          sudo ./install auto 
+
+  MyProductionVMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: ami-00dfe2c7ce89a450b
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+      SecurityGroups: 
+       - !Ref MySecurityGroup
+       # This profile gives the EC2 Instance permissions to access the S3 Bucket for WAR Files
+      IamInstanceProfile: !Ref MyInstanceProfile
+      Tags:
+        - Key: Name
+          Value: Prod
+        - Key: Environment
+          Value: Production
+      UserData: 
+        Fn::Base64: |
+          #!/bin/bash
+          sudo yum update
+          sudo yum install ruby
+          sudo yum install wget
+          sudo yum -y erase java-1.7.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk-devel
+          sudo yum -y install tomcat8
+          cd /home/ec2-user
+          wget https://aws-codedeploy-us-east-2.s3.amazonaws.com/latest/install  
+          chmod +x ./install
+          sudo ./install auto 
+        
+Outputs:
+  StageAppURL:
+    Description: Staging Application Access URL
+    Value: !Sub 'http://${MyStagingVMInstance.PublicDnsName}:8080/ccdemo/hello' 
+  ProdAppURL:
+    Description: Prod Application Access URL
+    Value: !Sub 'http://${MyProductionVMInstance.PublicDnsName}:8080/ccdemo/hello' 
+
+   

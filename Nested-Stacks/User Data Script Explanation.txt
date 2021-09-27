@@ -1,0 +1,17 @@
+ #!/bin/bash
+          sudo yum update
+	 ---- ---------ERASE jdk-1.7 -----------------------------------
+          sudo yum -y erase java-1.7.0-openjdk.x86_64
+	----- -----INSTALL jdk-1.8	------------------------------------
+          sudo yum -y install java-1.8.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk-devel
+	-----------INSTALL tomcat8 --------------------------------------
+          sudo yum -y install tomcat8
+	------------START The tomcat-------------------------------------------
+          service tomcat8 start
+        ------------MAKE DIRECTORY ---------------------------------------------
+          mkdir /usr/share/tomcat8/webapps/ROOT
+-------	----- CREATE index.html ------------------------------------------
+          touch /usr/share/tomcat8/webapps/ROOT/index.html
+	---- PUT "Cloud Formation Tomcat8" ON iNDEX.HTML
+          echo "Cloud Formation Tomcat8" > /usr/share/tomcat8/webapps/ROOT/index.html

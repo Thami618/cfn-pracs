@@ -1,0 +1,16 @@
+#!/bin/bash
+          sudo yum update
+          sudo yum install ruby
+          sudo yum install wget
+-------------------INSTALL JDK 8 AND REMOVE 7--------------------------------
+          sudo yum -y erase java-1.7.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk.x86_64
+          sudo yum -y install java-1.8.0-openjdk-devel
+          sudo yum -y install tomcat8
+          cd /home/ec2-user
+------------------INSTALLS THE CODEDEPLOY AGENT----------------------------------------------------------
+          wget https://aws-codedeploy-us-east-2.s3.amazonaws.com/latest/install
+          chmod +x ./install
+          sudo ./install auto 
+-----------------------------------------------------------------------------------------------------------------
+EC2 VM imageID: ami-00dfe2c7ce89a450b

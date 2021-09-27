@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+Parameters:
+
+  EnvironmentName:
+    Description: Select the env
+    Type: String
+    Default: dev
+    AllowedValues:
+    - dev
+    - prod
+    - qa
+Mappings:
+#First Map
+  MyRegionMap:
+    #First level key
+    us-east-2:
+      #Second level key
+      HVM64: ami-0443305dabd4be2bc
+    us-west-1:
+      HVM64: ami-04b6c97b14c54de18
+#Second Map
+  MyEnvironmentMap:
+  #First level key
+    dev:
+      #Second level key
+      instanceType: t2.micro
+    prod:
+      instanceType: t2.small
+    qa:
+      instanceType: t2.micro
+
+Conditions:
+  CreateEIPForProd: !Equals [!Ref EnvironmentName, prod]
+  #This line means not of Prod SG is Dev SG
+  CreatDevSG: !Not [{Condition: CreateProdSG}]
+  CreateProdSG: !Equals [!Ref EnvironmentName, prod]
+  #If either region us-east-2 or us-west-1 and if Environment name is Dev then the condition becomes true
+  IfRegionUseKeyName: !And [!Or [!Equals [!Ref 'AWS::Region',us-east-2], !Equals [!Ref 'AWS::Region',us-west-1]], !Equals [!Ref EnvironmentName, dev]]
+  
+
+
+Resources:
+  MyVMInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap
+        - MyRegionMap
+        - !Ref 'AWS::Region'
+        - HVM64
+      InstanceType: !FindInMap 
+        - MyEnvironmentMap
+        - !Ref EnvironmentName
+        - instanceType
+        #If IfRegionUseKeyName is TRUE, then give cfn-key-1, if not give cfn-key-2
+      KeyName: !If [IfRegionUseKeyName, cfn-key-1, cfn-key-2]
+      #if dev security group is true, then assign the Dev Security
+      #if dev security group is false, then assign the Prod Security
+      #if false, then assign the other security group
+      SecurityGroups: !If [CreatDevSG, [!Ref DevEnvecurityGroup], [!Ref 'ProdEnvecurityGroup']]
+        
+
+  MyProdEIP:
+    Type: AWS::EC2::EIP
+    Condition: CreateEIPForProd
+    Properties:
+      InstanceId: !Ref MyVMInstance
+  
+  DevEnvecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreatDevSG
+    Properties:
+      GroupDescription: Dev SG
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0 
+
+  ProdEnvecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Condition: CreateProdSG
+    Properties:
+      GroupDescription: Prod SG
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: '22'
+        ToPort: '22'
+        CidrIp: 0.0.0.0/0 
