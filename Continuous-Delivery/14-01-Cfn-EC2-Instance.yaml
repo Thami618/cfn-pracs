@@ -40,7 +40,7 @@ Resources:
       Path: /
       Roles:
         - !Ref MyCICDEC2InstanceProfileRole
-# CREATION OF MY SECURITY GROUP RESOURCE
+#CREATION OF MY SECURITY GROUP RESOURCE
   MySecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties: 
