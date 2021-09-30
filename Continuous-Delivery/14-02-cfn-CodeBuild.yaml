@@ -60,8 +60,8 @@ Resources:
                 Resource:
                   - Fn::Sub: arn:aws:s3:::codepipeline-${AWS::Region}-*
                   # THE CONDITION HERE IS THAT THE ACTIONS ARE ONLY ALLOWED TO PERFORM THOSES ACTIONS ON THE ARTIFACT BUCKET
-                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}/*
-                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreS3Location}
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreLocation}/*
+                  - Fn::Sub: arn:aws:s3:::${ArtifactStoreLocation}
 
   BuildRestAppCFNproject:
     Type: AWS::CodeBuild::Project
