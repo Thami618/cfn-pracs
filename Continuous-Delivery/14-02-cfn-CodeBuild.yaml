@@ -68,7 +68,7 @@ Resources:
     Properties:
       Name: !Sub BuildRestAppCFNproject-${AWS::StackName}
       Description: Build war file for rest application
-      ServiceRole: !!GetAtt [CodeBuildRole, Arn]
+      ServiceRole: !GetAtt [CodeBuildRole, Arn]
       Artifacts:
         Type: S3
         Location: !Ref ArtifactStoreLocation
