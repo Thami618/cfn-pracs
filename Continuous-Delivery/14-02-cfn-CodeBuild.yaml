@@ -81,7 +81,8 @@ Resources:
         Location: !Sub https://git-codecommit.us-east-2.amazonaws.com/v1/repos/${ApplicationRepoName}
         Type: CODECOMMIT
       TimeoutInMinutes: 10
-      Tags: 
-       - Key: Name
-       - Value: BuildRestAppCFNproject
+      Tags:
+        - Key: Name
+          Value: !Sub BuildRestAppCFN-${AWS::StackName}
+       
       
